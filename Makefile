@@ -297,7 +297,7 @@ snapshot:
 	@echo "static char SNAPSHOT[] = \"$(TAG)\";" > SNAPSHOT.h
 	@$(MAKE) -C doc snapshot
 	@$(MAKE) man
-	@git commit -a -m "iputils-$(TAG)"
-	@git tag -s -m "iputils-$(TAG)" $(TAG)
-	@git archive --format=tar --prefix=iputils-$(TAG)/ $(TAG) | bzip2 -9 > ../iputils-$(TAG).tar.bz2
+	@git commit -a -m "iputils-$(TAG)"  #修补提交（修补最近一次的提交而不创建新的提交）
+	@git tag -s -m "iputils-$(TAG)" $(TAG)  #-s如果有自己的私钥，还可以用 GPG 来签署标签
+	@git archive --format=tar --prefix=iputils-$(TAG)/ $(TAG) | bzip2 -9 > ../iputils-$(TAG).tar.bz2 #从 git 仓库中导出项目
 
