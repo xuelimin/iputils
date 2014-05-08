@@ -94,7 +94,7 @@ else
 endif
 
 # USE_RESOLV: LIB_RESOLV
-#判断crypto加密解密函数库中的函数是否重复
+#判断resolve加密解密函数库中的函数是否重复
 LIB_RESOLV = $(call FUNC_LIB,$(USE_RESOLV),$(LDFLAG_RESOLV))
 
 # USE_CAP:  DEF_CAP, LIB_CAP
