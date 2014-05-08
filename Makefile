@@ -157,6 +157,7 @@ LIB_arping = $(LIB_SYSFS) $(LIB_CAP) $(LIB_IDN)
 
 ifneq ($(ARPING_DEFAULT_DEVICE),)#条件语句的开始
 DEF_arping += -DDEFAULT_DEVICE=\"$(ARPING_DEFAULT_DEVICE)\"
+#继续追加
 #在$(ARPING_DEFAULT_DEVICE)中存在结尾空格，在这句话中也会被作为makefile需要执行的一部分。
 endif
 
@@ -224,18 +225,20 @@ ninfod:
 
 # -------------------------------------
 # modules / check-kernel are only for ancient kernels; obsolete
+#将某个程序实体标记为一个建议不再使用的实体。每次使用被标记为已过时的实体时，随后将生成警告或错误，这取决于属性是如何配置的。
 check-kernel:
 ifeq ($(KERNEL_INCLUDE),)
-	@echo "Please, set correct KERNEL_INCLUDE"; false
+	@echo "Please, set correct KERNEL_INCLUDE"; #取消echo 的显示  在shell下就显示Please, set correct KERNEL_INCLUDE
+false
 else
-	@set -e; \
+	@set -e; \  #若字符串中出现以下字符，则特别加以处理，而不会将它当成一般文字输出
 	if [ ! -r $(KERNEL_INCLUDE)/linux/autoconf.h ]; then \
 		echo "Please, set correct KERNEL_INCLUDE"; false; fi
 endif
 
 modules: check-kernel
 	$(MAKE) KERNEL_INCLUDE=$(KERNEL_INCLUDE) -C Modules
-
+#删除已生成的目标文件
 # -------------------------------------
 man:
 	$(MAKE) -C doc man
@@ -244,7 +247,7 @@ html:
 	$(MAKE) -C doc html
 
 clean:
-	@rm -f *.o $(TARGETS)
+	@rm -f *.o $(TARGETS)  #容错处理
 	@$(MAKE) -C Modules clean
 	@$(MAKE) -C doc clean
 	@set -e; \
@@ -257,7 +260,7 @@ distclean: clean
 		if [ -f ninfod/Makefile ]; then \
 			$(MAKE) -C ninfod distclean; \
 		fi
-
+#与上段同
 # -------------------------------------
 snapshot:
 	@if [ x"$(UNAME_N)" != x"pleiades" ]; then echo "Not authorized to advance snapshot"; exit 1; fi
