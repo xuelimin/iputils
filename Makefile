@@ -5,11 +5,11 @@
 # CC 
 #指定gcc程序
 CC=gcc
-# Path to parent kernel include files directory
+# Path to parent kernel include files directory 
 #母核路径包含文件的目录
 LIBC_INCLUDE=/usr/include
 # Libraries
-ADDLIB=
+ADDLIB=     #不添加其他的库
 # Linker flags
 ## Linker flags
 #Wl选项告诉编译器将后面的参数传递给链接器
@@ -71,12 +71,15 @@ ENABLE_RDISC_SERVER=no
 # CCOPT=-fno-strict-aliasing -Wstrict-prototypes -Wall -Werror -g
 #-Wstrict-prototypes: 如果函数的声明或定义没有指出参数类型，编译器就发出警告
 CCOPT=-fno-strict-aliasing -Wstrict-prototypes -Wall -g
-CCOPTOPT=-O3
+CCOPTOPT=-O3    #3使用级优化
 # 关闭所有assert()调试信息
 GLIBCFIX=-D_GNU_SOURCE
 DEFINES=
 LDLIB=
 
+#选择库函数
+#如果过滤掉参数1中除了静态函数外的其他函数，就将$(1)),$(LDFLAG_STATIC) $(2)这几个变量所代表的库赋给FUNC_LIB
+#否则，只将参数2赋给FUNC_LIB
 FUNC_LIB = $(if $(filter static,$(1)),$(LDFLAG_STATIC) $(2) $(LDFLAG_DYNAMIC),$(2))
 
 #判断每个函数库中是否重复包含函数
@@ -139,9 +142,10 @@ IPV4_TARGETS=tracepath ping clockdiff rdisc arping tftpd rarpd
 IPV6_TARGETS=tracepath6 traceroute6 ping6
 TARGETS=$(IPV4_TARGETS) $(IPV6_TARGETS)
 
-CFLAGS=$(CCOPTOPT) $(CCOPT) $(GLIBCFIX) $(DEFINES)
+CFLAGS=$(CCOPTOPT) $(CCOPT) $(GLIBCFIX) $(DEFINES)        #编译选项
 LDLIBS=$(LDLIB) $(ADDLIB)
 
+#将命令 uname -n 的输出给变量UNAME_N
 UNAME_N:=$(shell uname -n)
 LASTTAG:=$(shell git describe HEAD | sed -e 's/-.*//')
 TODAY=$(shell date +%Y/%m/%d)
@@ -231,22 +235,26 @@ DEF_tftpd =
 DEF_tftpsubs =
 LIB_tftpd =
 
+#tftpd依赖tftpsus.o文件
 tftpd: tftpsubs.o
+#tftpd.o和tftpsubs.o文件依赖tftp.h头文件
 tftpd.o tftpsubs.o: tftp.h
 
 # -------------------------------------
 # ninfod
+#生成ninfod可执行文件
 ninfod:
-	@set -e; \         #若指令传回值不等于0，则立即退出shell。
+	@set -e; \        #如果ninfod目录下没有Makefiel文件，就创建一个。
 		if [ ! -f ninfod/Makefile ]; then \     #立即跟文件名也可以正常压缩和解压缩
 			cd ninfod; \
 			./configure; \
 			cd ..; \
 		fi; \  #then 和 fi 在shell里面被认为是分开的语句，fi为if语句的结束,相当于end if
-		$(MAKE) -C ninfod
+		$(MAKE) -C ninfod     #否则，直接指定ninfod为读取Makefile的一个路径。
 
 # -------------------------------------
 # modules / check-kernel are only for ancient kernels; obsolete
+#检查内核
 #将某个程序实体标记为一个建议不再使用的实体。每次使用被标记为已过时的实体时，随后将生成警告或错误，这取决于属性是如何配置的。
 check-kernel:
 ifeq ($(KERNEL_INCLUDE),)
@@ -254,30 +262,32 @@ ifeq ($(KERNEL_INCLUDE),)
 false
 else
 	@set -e; \  #若字符串中出现以下字符，则特别加以处理，而不会将它当成一般文字输出
-	if [ ! -r $(KERNEL_INCLUDE)/linux/autoconf.h ]; then \
+	if [ ! -r $(KERNEL_INCLUDE)/linux/autoconf.h ]; then \      #如果autoconf.h不是一个普通文件，则报错。
 		echo "Please, set correct KERNEL_INCLUDE"; false; fi
 endif
 
 modules: check-kernel
 	$(MAKE) KERNEL_INCLUDE=$(KERNEL_INCLUDE) -C Modules
-#删除已生成的目标文件
+ #指定Modules路径中的Makefile文件编译内核
 # -------------------------------------
 man:
-	$(MAKE) -C doc man
+	$(MAKE) -C doc man    #生成man的帮助文档
 
 html:
-	$(MAKE) -C doc html
+	$(MAKE) -C doc html     #生成网页格式的帮助文档
 
 clean:
-	@rm -f *.o $(TARGETS)  #容错处理
-	@$(MAKE) -C Modules clean
-	@$(MAKE) -C doc clean
+	@rm -f *.o $(TARGETS)  #删除所有生成的目标的二进制文件
+	#指定读取makefile的目录。
+	@$(MAKE) -C Modules clean     #执行Modules目录下Makefile中的clean，删除指定的文件。
+	@$(MAKE) -C doc clean      #执行doc目录下Makefile中的clean，删除指定的文件。
 	@set -e; \
-		if [ -f ninfod/Makefile ]; then \
-			$(MAKE) -C ninfod clean; \
+		if [ -f ninfod/Makefile ]; then \      	#如果ninfod目录下存在makefile文件，就进入ninfod目录并读取malefile文件，
+			$(MAKE) -C ninfod clean; \    #执行clean操作， 清除之前编译的可执行文件及配置文件。
 		fi
 
 distclean: clean
+#清除ninfod目录下所有生成的文件。
 	@set -e; \
 		if [ -f ninfod/Makefile ]; then \
 			$(MAKE) -C ninfod distclean; \
@@ -286,17 +296,25 @@ distclean: clean
 # -------------------------------------
 snapshot:
 	@if [ x"$(UNAME_N)" != x"pleiades" ]; then echo "Not authorized to advance snapshot"; exit 1; fi
+#如果UNAME_N和pleiades的十六进制不等，提示信息，并退出。
 	@echo "[$(TAG)]" > RELNOTES.NEW
+#将TAG变量的内容重定向到RELNOTES.NEW文档中。
 	@echo >>RELNOTES.NEW
+#输出一个空行
 	@git log --no-merges $(LASTTAG).. | git shortlog >> RELNOTES.NEW
+	#将git log和git shortlog的输出信息重定向到RELOTES.NEW文档里。
 	@echo >> RELNOTES.NEW
 	@cat RELNOTES >> RELNOTES.NEW
+#将RELNOTES里的内容重定向的RELNOTES.NEW文档里。
 	@mv RELNOTES.NEW RELNOTES
 	@sed -e "s/^%define ssdate .*/%define ssdate $(DATE)/" iputils.spec > iputils.spec.tmp
 	@mv iputils.spec.tmp iputils.spec
 	@echo "static char SNAPSHOT[] = \"$(TAG)\";" > SNAPSHOT.h
+#将TAG变量中的内容以"static char SNAPSHOT[] = \"$(TAG)\"的形式重定向到SNAPSHOT.h文档中
 	@$(MAKE) -C doc snapshot
+	#生成snapshot的doc文档。
 	@$(MAKE) man
+	#执行man命令
 	@git commit -a -m "iputils-$(TAG)"  #修补提交（修补最近一次的提交而不创建新的提交）
 	@git tag -s -m "iputils-$(TAG)" $(TAG)  #-s如果有自己的私钥，还可以用 GPG 来签署标签
 	@git archive --format=tar --prefix=iputils-$(TAG)/ $(TAG) | bzip2 -9 > ../iputils-$(TAG).tar.bz2 #从 git 仓库中导出项目
